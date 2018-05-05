@@ -16,6 +16,8 @@ var users = require('./routes/users');
 
 var app = express();
 
+
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -32,6 +34,12 @@ app.use(function(req, res, next) {
 
 app.use(passport.initialize());
 
+var sockIO = require('socket.io')();
+app.sockIO = sockIO;
+var jwt = require('jsonwebtoken');
+
+var User = require("./models/user");
+
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -41,8 +49,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/', function(req, res) {
-  res.send('Page under construction.');
+// app.get('/', function(req, res) {
+//   res.send('Page under construction.');
+// });
+
+app.get('/', function(req, res){
+  res.sendFile(__dirname + '/index.html');
 });
 
 app.use('/api', api);
@@ -64,5 +76,113 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+
+app.get('/', function(req, res){
+  res.sendFile(__dirname + '/index.html');
+});
+
+
+sockIO.use(function(socket, next){  
+  if (socket.handshake.query && socket.handshake.query.token){
+    jwt.verify(socket.handshake.query.token, 'nodeauthsecret', function(err, decoded) {
+
+      console.log(decoded);
+      console.log("^^");
+
+      if(err) { 
+        return next(new Error('Authentication error'));
+      }
+
+
+    User.findOne({
+      username: decoded.username
+    }, function(err, user) {
+      console.log(user);
+      console.log("user^^");
+        if (err) {
+            console.log('error');
+            console.log(err);
+            throw err;
+        }
+        if (!user) {
+            return next(new Error('Authentication error'));
+        } else {
+          // check if password matches
+          console.log("user pass: "+user.password);
+          console.log("decoded pass: "+decoded.password);
+
+          if(user.password === decoded.password) {
+               // if user is found and password is right create a token
+                console.log('valid');
+                socket.decoded = decoded;
+                next();
+            } else {
+              // res.status(401).send({success: false, msg: 'Authentication failed. Wrong password.'});
+              return next(new Error('Authentication error'));
+            }
+
+          // user.comparePassword(decoded.password, function (err, isMatch) {
+          //   if (isMatch && !err) {
+          //     // if user is found and password is right create a token
+          //       console.log('valid');
+          //       socket.decoded = decoded;
+          //       next();
+          //   } else {
+          //     // res.status(401).send({success: false, msg: 'Authentication failed. Wrong password.'});
+          //     return next(new Error('Authentication error'));
+          //   }
+          // });
+        }
+      });
+
+      console.log('test');
+      console.log(err);
+      console.log(decoded);
+
+    
+   
+    });
+  } 
+  // else {
+  //     next(new Error('Authentication error'));
+  // }    
+})
+
+var userSockets = [];
+
+sockIO.on('connection', function(socket){
+  var socketId = socket.id;
+  userSockets.push(socketId);
+  console.log("On connect: UserSockets");
+  console.log(userSockets);
+  sockIO.emit('chat message', 'connection established '+socketId);
+  
+  socket.on('chat message', function(msg){
+    sockIO.emit('chat message', msg);
+  });
+  
+   socket.on('disconnect', function(){
+     
+      for(var i=0; i < userSockets.length; i++){
+          if(userSockets[i] === socket.id){
+              userSockets.splice(i,1); 
+          }
+        }
+            
+    console.log("On disconnect: UserSockets");
+    console.log(userSockets);
+    console.log('user disconnected');
+  });
+  
+});
+
+
+
+// sockIO.on('connection', function(socket){
+//   socket.on('chat message', function(msg){
+//     sockIO.emit('chat message', msg);
+//   });
+// });
 
 module.exports = app;

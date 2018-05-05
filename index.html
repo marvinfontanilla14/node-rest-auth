@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+    </style>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+    <form action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+
+ <script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+  $(function () {
+
+  	// var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1YWVjMWFmNzg4ZmIyZTI0NmNjMTdiYzgiLCJ1c2VybmFtZSI6Im1hcnZpbiIsInBhc3N3b3JkIjoiJDJhJDEwJENaQzl2cXRXQzhGZXE3OFR0NzA1VWVzOHZKSTQueDZrNlRNa2FTNGFmOUJtaUpTb3hPL0tHIiwiX192IjowLCJpYXQiOjE1MjU0MjI4NDZ9.h3h2RDKBUHNzuiRuoIDQ2y5W26cR2J8H8mQa6AwPF_U";
+
+    // var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1YWVjMWFmNzg4ZmIyZTI0NmNjMTdiYzgiLCJ1c2VybmFtZSI6Im1hcnZpbiIsInBhc3N3b3JkIjoiJDJhJDEwJENaQzl2cXRXQzhGZXE3OFR0NzA1VWVzOHZKSTQueDZrNlRNa2FTNGFmOUJtaUpTb3hPL0tHIiwiX192IjowLCJpYXQiOjE1MjU1MDg2NDZ9.L7GtbmkAEP75VSA08d4L6FVC4mtTPpnn2A66PtEHJnk";
+
+    var token =  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI1YWVjMWFmNzg4ZmIyZTI0NmNjMTdiYzgiLCJ1c2VybmFtZSI6Im1hcnZpbiIsInBhc3N3b3JkIjoiJDJhJDEwJENaQzl2cXRXQzhGZXE3OFR0NzA1VWVzOHZKSTQueDZrNlRNa2FTNGFmOUJtaUpTb3hPL0tHIiwiX192IjowLCJpYXQiOjE1MjU1MDg4Njl9.OW7afLx0WsJtqUyeYrNhsBfcH8jSUz1q-7GwOwMZMdc";
+    //
+    var socket = io.connect("http://localhost:3000", {
+      query: {token: token}
+    });
+
+    // var socket = io.connect("http://localhost:3000");
+    $('form').submit(function(){
+      socket.emit('chat message', $('#m').val());
+      $('#m').val('');
+      return false;
+    });
+    socket.on('chat message', function(msg){
+      $('#messages').append($('<li>').text(msg));
+    });
+
+       // client
+    socket.on('error', function(err) {
+      console.log(err);
+       $('#messages').append(err);
+    });
+
+  });
+</script>
+
+
+  </body>
+</html>
